@@ -7,13 +7,13 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.utils.callback_data import CallbackData
 
-
+#dd
 bot=Bot(tokenbot.tokenbot)
 dp=Dispatcher(bot)
 moni=1
 mess_id=''
 mess_ref=''
-time_monitor1='10:20'
+time_monitor1='10:30'
 time_monitor2='19:30'
 @dp.message_handler(content_types=['text'])
 async def send_message(message):
