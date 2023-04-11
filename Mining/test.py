@@ -17,7 +17,7 @@ def options_add():
     options.add_experimental_option("excludeSwitches", ['enable-automation'])  #  FOR uc
     options.add_argument("--disable-blink-features")  # отключение функций блинк-рантайм
     options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_argument("--headless")  # скрытый запуск браузера
+    #options.add_argument("--headless")  # скрытый запуск браузера
     options.add_argument('--no-sandobox')  # режим песочницы
     options.add_argument('--disable-gpu')  # во избежание ошибок
     options.add_argument('--disable-dev-shm-usage')  # увеличения памяти для хрома
@@ -58,6 +58,7 @@ def armtek_coockie():
     with open('sess.txt', 'w') as file:
         json.dump(kuki,file)
     time.sleep(10)
+# ### либо armtek_cookie будет вызывать armtek
     if timenow > time11obj and timenow < time24obj:
         print('run11---00')
     elif timenow > time00obj and timenow < time05obj:
@@ -66,10 +67,13 @@ def armtek_coockie():
         print("run05---11")
     else:
         print('str 142 где-то ошибка по времени')
-
+#функция, которая вызывает соответствующую функцию по времени, принимает у нее данные
+#  и возвращает их в вызывающую функцию - это armtek()
+def time_data(): # скорее всего обойдемся без этой функции
+    pass
 #  функции, которые только собирают данные, вызывая data_post() и, либо записывает данные,
 # либо берет из файла, дополняя своими данными, возвращает.
-def data5_11(driver): # сбор данных с 5-00 до 11-00
+def data5_11(driver):
     print('run data5_11 ')
     driver.find_element(By.XPATH, '//*[@id="SCRDATE"]').clear()  # первая ячейка даты создания заказа
     driver.find_element(By.XPATH, '//*[@id="SCRDATE"]').send_keys('\uE003' * 10,
@@ -83,46 +87,55 @@ def data5_11(driver): # сбор данных с 5-00 до 11-00
             s=driver.find_element(By.XPATH, f'//*[@id="DataTables_Table_0"]/tbody/tr[{i}]/td[12]/div').text # сумма поставки
             kom=driver.find_element(By.XPATH,f'//*[@id="DataTables_Table_0"]/tbody/tr[{i}]/td[15]/span').text # комментарий
             try:
-                date_f = driver.find_element(By.XPATH,f'//*[@id="DataTables_Table_0"]/tbody/tr[{i}]/td[5]/div/div').text # дата факутры
+                date_f = driver.find_element(By.XPATH, f'//*[@id="DataTables_Table_0"]/tbody/tr[{i}]/td[5]/div/div').text
                 print(date_f)
-                factura = driver.find_element(By.XPATH,f'//*[@id="DataTables_Table_0"]/tbody/tr[{i}]/td[5]/div/a').get_attribute('href') # ссылка на фактуру
+                factura=driver.find_element(By.XPATH, f'//*[@id="DataTables_Table_0"]/tbody/tr[{i}]/td[5]/div/a').get_attribute('href')
+                print(factura)
             except:
                 continue
-            if date.today().strftime("%d.%m.%Y") == date_f:  # сегодняшняя дата = дате поставки
-                print(s, '\n', kom)
+            if (date.today() - datetime.timedelta(days=3)).strftime("%d.%m.%Y")== date_f: # сегодняшняя дата = дате поставки
+                #list_z.append('Сумма: ' + s + 'руб, комментарий: ' + kom)
+                print(s,'\n',kom)
                 driver.get(factura)
-                for i in range(1, 15):
+                time.sleep(15)
+                for i in range(1,15):
                     time.sleep(5)
                     try:
-                        #  получаем список ЗЧ по фактуре
-                        zch = driver.find_element(By.XPATH, f'//*[@id="DataTables_Table_0"]/tbody/tr[{i}]/td[5]').text
-                        print('zch', zch)
+                        zch=driver.find_element(By.XPATH, f'//*[@id="DataTables_Table_0"]/tbody/tr[{i}]/td[5]').text
+                        print('zch',zch)
                         list_z.append(zch)
+
+
                     except:
+                        print(sys.exc_info())
                         break
+            print(list_z)
             return list_z
     except: # если строк в поиске < 10
         print(sys.exc_info())
         print('данных больше нет')
     print(list_z)
     return list_z
+    #driver.find_element(By.XPATH, '//*[@id="DataTables_Table_0"]/tbody/tr[3]/td[5]/div/div/text()')
+    pass
 
 
-
-def data11_24(driver): # сбор данных с 11-00 до 24-00
+def data11_24(driver):
     print('run data11_24() ')
     list_z=data_post(driver)[:]# собрали данные по поставкам
     with open("armtek.txt", 'w') as file:
         for i in list_z:
             file.write(str(i)+'\n') #записали в файл
     return list_z
-def data0_5(driver): # сбор данных с  24-00 до 05-00
+def data0_5(driver):
     print('run data0_5() ')
     list_z=data_post(driver)[:]# собрали данные по поставкам
     with open("armtek.txt", 'r') as file:
         for i in file.readlines(): # прочитали ранее записанный файл
             list_z.append(i) # в список вновь полученных поставок добавили ранее полученные поставки
     return list_z
+
+
 
 def data_post(driver): # получаем список поставок
     print('run data post ')
@@ -186,11 +199,13 @@ def armtek():
        # остальные данные кук селениум добавляет сам.
         driver.get(url)
         time.sleep(5)
-
+        # ##### Эта функция будет вызывать соответствующую времени функцию data...(), передавая драйвер
+        # ####  Либо также через armtek_cookie()
+        # ### либо armtek_cookie будет вызывать armtek
         if  timenow >time11obj and timenow < time24obj:
-            return data11_24(driver)
+            return data5_11(driver)
         elif  timenow >time00obj and timenow < time05obj:
-            return data0_5(driver)
+            return data5_11(driver)#data0_5(driver)
         elif  timenow >time05obj and timenow < time11obj:
             return data5_11(driver)
         else:

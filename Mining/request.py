@@ -21,14 +21,12 @@ async def send_message(message):
 
     but = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btn1 = types.KeyboardButton('хешрейт')
-    btn2 = types.KeyboardButton('старт')
+    btn2 = types.KeyboardButton('Старт')
     btn3 = types.KeyboardButton('Стоп')
-    btn4 = types.KeyboardButton('wtoM')
-    btn5 = types.KeyboardButton('hashrate.no')
-    btn6 = types.KeyboardButton('reboot1060')
-    btn7 = types.KeyboardButton('reboot1070')
-    btn8 = types.KeyboardButton('binance')
-    but.add(btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8)
+    btn4 = types.KeyboardButton('профит')
+    btn5 = types.KeyboardButton('Армтек')
+    btn6 = types.KeyboardButton('binance')
+    but.add(btn1, btn2, btn3, btn4, btn5, btn6)
     print(message.text.lower(), message)
     if message.text.lower() == 'хешрейт':
         #await bot.send_message(message.from_user.id, mineros.hashrate(), reply_markup=but)
@@ -41,36 +39,28 @@ async def send_message(message):
         monitor = 1
         await asyncio.gather(armtek_momitor(message),monitor_hashrate(message),delta_price(message))  # одновременный запуск асинхронных функций
 
-    elif message.text.lower() == 'стоп':# останока Wdog
+    elif message.text.lower() == 'стоп':# остановка Wdog
         monitor = 0
         print(monitor)
-    elif message.text.lower() == 'hashrate.no': # Парсинг hashrate.no с выводом соответствующих
-        #данных о доходности
+    elif message.text.lower() == 'профит': # Парсинг hashrate.no и what to mine с выводом соответствующих данных о доходности
         if hashrateno2.error == 0:
             print(hashrateno2.error)
             await bot.send_message(message.from_user.id, 'Нет соединения с сайтом')
-        else:
-            #print('получаем',hashrateno.hasrateno())
-            for j in hashrateno2.hasrateno():
-                #print(j)
-                await bot.send_message(message.from_user.id, str(j).translate({ord(i):None for i in "[]'" }))
-    elif message.text.lower() == 'wtom':# Парсинг Whattomine с выводом соответствующих
-        #данных о доходности
-        if type(WtoM.whattomine()) ==  str:
+        elif type(WtoM.whattomine()) ==  str:
             await bot.send_message(message.from_user.id, 'Нет соединения с сайтом')
         else:
-            #bot.send_message(message.from_user.id, str(WtoM.whattomine()))
+            for j in hashrateno2.hasrateno():
+                await bot.send_message(message.from_user.id, str(j).translate({ord(i):None for i in "[]'" }))
             for i in WtoM.whattomine():
                 await bot.send_message(message.from_user.id, i)
     elif message.text.lower() == 'армтек':
         armtek_list = armtek.armtek()[:]
+        print('armtek_list', armtek_list)
         if armtek_list == []:
             await bot.send_message(message.from_user.id, 'Пока поставка не сформирована')
         else:
             for i in armtek_list:
                 await bot.send_message(message.from_user.id, i)
-    elif message.text.lower() == 'reboot1070':
-        mineros.reboot1070()
     elif message.text == 'binance':
         for i in binance.bin():
             await bot.send_message(message.from_user.id, i)
