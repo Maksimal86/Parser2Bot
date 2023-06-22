@@ -9,7 +9,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 import time, datetime, sys, title_massa
 def options_add():
     options = webdriver.ChromeOptions()
-    # options = undetected_chromedriver.ChromeOptions()
+    #options = undetected_chromedriver.ChromeOptions()
     # options.page_load_strategy = 'eager'#WebDriver ожидает, пока не будет возвращен запуск события DOMContentLoaded.
     # options.add_argument("set_window_size(0, 0)")
     options.add_experimental_option("excludeSwitches", ['enable-automation'])
@@ -32,7 +32,7 @@ def options_add():
     return options
 
 def pars(ref):
-    s = Service(executable_path=r'C:\yandexdriver.exe')
+
     options=options_add()
     driver = webdriver.Chrome(options=options, service=s)
     driver.get(ref)

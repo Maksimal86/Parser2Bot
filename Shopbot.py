@@ -52,6 +52,7 @@ async def send_message(message):
         await sbor_ozon_sber(message)
     elif message['text'] == 'сбор данных':
         await monitor_data(message)
+        await bot.send_message(message.from_user.id, 'обрабатываю запрос...', reply_markup=but)
     elif message['text'] == 'старт':
         await auto_start()
     elif message['text'] == 'кнопки':

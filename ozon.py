@@ -5,7 +5,7 @@ import time, datetime, title_massa, sys
 from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
-
+#import undetected_chromedriver
 from selenium.webdriver.support.ui import WebDriverWait
 def option_add():
     options = webdriver.ChromeOptions()
@@ -76,10 +76,9 @@ def ozon(ref):
 
             try:
                 price=driver.find_element(By.XPATH,f'//*[@id="layoutPage"]/div[1]/div[2]/div[2]/div[2]/div[6]/div[1]/div[1]/div/div[{teg}]/div[1]/div[1]/div[1]').text.translate({ord(i): None for i in [' ', '₽', ' '] })
-
             except:
-
                 price=driver.find_element(By.XPATH,f'//*[@id="layoutPage"]/div[1]/div[2]/div[2]/div[2]/div[6]/div[1]/div[1]/div/div[{teg}]/div[1]/div[1]/span/span[1]').text.translate({ord(i): None for i in [' ', '₽', ' '] })
+
             if ref == 'https://www.ozon.ru/category/suhie-korma-dlya-sobak-12303/?brand=27604755%2C100099741%2C22426860%2C77863441&deny_category_prediction=true&from_global=true&text=корм+для+собак+сухой&weight=10000.000%3B30000.000':
 
                 if str(title.text).lower().find('chappi') >= 0 or str(title).lower().find('чаппи') >= 0 or str(
@@ -110,7 +109,7 @@ def ozon(ref):
 
         driver.close()
         driver.quit()
-    try:
+    try:  # возможно этот фрагмент надо будет добавить????
         if len(res_dict)*2 > len(res_dict2):
             result = sorted(res_dict.keys())
         else:
