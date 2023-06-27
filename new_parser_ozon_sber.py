@@ -62,7 +62,6 @@ class Reference_Ozon(Browser):
             #    link_to_folowed_page = reference + f'&page={npage}'# второй вариант через brand
             link_to_folowed_page = reference[:match.start()] + f'prediction=true&from_global=true&page={npage}' + '&' + reference[match.end():]
             list_of_reference.append(link_to_folowed_page) # собрали все ссылки на страницы  в список
-        print(list_of_reference)
         return list_of_reference #удалить№
     def get_next_page(self):
         try:
@@ -87,26 +86,39 @@ class Reference_Ozon(Browser):
         return title_product
     def get_reference_on_product(self, teg):
         return self.driver.find_element(By.XPATH,f'//*[@id="paginatorContent"]/div[1]/div/div[{teg}]/div[1]/a').get_attribute("href")
-    def get_mass_product_in_kg(self, teg):
-        massa_of_product_in_kg = new_get_mass_from_title.search_of_mass_product(Reference_Ozon.get_title(self, teg))
-        if massa_of_product_in_kg:
-            return int(massa_of_product_in_kg)
-        else:
-            return None
+
+   # def get_mass_product_in_kg(self, teg):
+        #print('масса в кг', Reference_Ozon.get_mass_product_in_kg(self, teg))
+    #    self.massa_of_product_in_kg = new_get_mass_from_title.search_of_mass_product(Reference_Ozon.get_title(self, teg))#2
+        #return int(self.massa_of_product_in_kg)
     def get_price_of_product_per_kg(self, teg):
-        return Reference_Ozon.get_price(self, teg) / Reference_Ozon.get_mass_product_in_kg(self, teg)# что передать????
+        self.massa_of_product_in_kg = new_get_mass_from_title.search_of_mass_product(
+            Reference_Ozon.get_title(self, teg))
+        #print('str98',Reference_Ozon.get_mass_product_in_kg(self,teg))
+        if self.massa_of_product_in_kg is None:
+            return None
+        else:
+            try:
+                self.price_of_product_per_kg = Reference_Ozon.get_price(self, teg) / self.massa_of_product_in_kg
+                return Reference_Ozon.get_price(self, teg) / self.massa_of_product_in_kg
+            except ZeroDivisionError:
+                return  None
     def get_price_list_of_products(self):
         number_of_cards_per_page = 32
         data_of_product = []
         price_list_of_products = []
         for teg in range(1, number_of_cards_per_page):
             try:
-                data_of_product.append(Reference_Ozon.get_price_of_product_per_kg(self, teg))
-                data_of_product.append(Reference_Ozon.get_title(self, teg))
-                data_of_product.append(Reference_Ozon.get_price(self, teg))
-                data_of_product.append(Reference_Ozon.get_reference_on_product(self, teg))
-                price_list_of_products.append(data_of_product)
-                data_of_product = []
+                if Reference_Ozon.get_price_of_product_per_kg(self, teg) is None:
+                    continue
+                else:
+                    data_of_product.append(self.price_of_product_per_kg)
+                    data_of_product.append(Reference_Ozon.get_title(self, teg))
+                    data_of_product.append(Reference_Ozon.get_price(self, teg))
+                    data_of_product.append(Reference_Ozon.get_reference_on_product(self, teg))
+                    price_list_of_products.append(data_of_product)
+                    data_of_product = []
+
             except NoSuchElementException:
                 break
         return price_list_of_products
@@ -204,14 +216,9 @@ def main_function_get_product_data(reference):
     new_big_dict = {}
     for i in range(number_of_pages_viewed):
         new_big_dict = received_link.add_new_data_to_dict(new_big_dict)
-        #received_link.get_price_list_of_products()
-
-        #   ############## Продумать последовательный вызов функций
         received_link.get_next_page()
-    #try:
-        #received_link.sorting_keys_of_dict(new_big_dict)
-        #received_link.stop_selenium()
     received_link.get_result_for_bot(new_big_dict)
+    received_link.stop_selenium()
     #except:
     #print('main function', sys.exc_info())
 main_function_get_product_data('https://www.ozon.ru/category/suhie-korma-dlya-koshek-12349/?category_was_predicted=true&deny_category_prediction=true&from_global=true&text=корм+для+кошек+сухой&tf')
