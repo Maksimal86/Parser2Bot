@@ -203,7 +203,7 @@ class Reference_Sber(Browser):
         return new_get_mass_from_title.search_of_mass_product(Reference_Sber.get_title(self, card))
     def result_for_bot(self):
         pass
-        #for in Reference_Ozon.
+
 
 def main_function_get_product_data(reference):
     if reference[:16] == 'https://www.ozon':
@@ -219,10 +219,5 @@ def main_function_get_product_data(reference):
         received_link.get_next_page()
     received_link.get_result_for_bot(new_big_dict)
     received_link.stop_selenium()
-    #except:
-    #print('main function', sys.exc_info())
+
 main_function_get_product_data('https://www.ozon.ru/category/suhie-korma-dlya-koshek-12349/?category_was_predicted=true&deny_category_prediction=true&from_global=true&text=корм+для+кошек+сухой&tf')
-#received_link =Reference_Ozon(reference='https://www.ozon.ru/category/suhie-korma-dlya-koshek-12349/probalance-32169982/?deny_category_prediction=true&from_global=true&sorting=ozon_card_price&text=корм+для+кошек+сухой&weight=10000.000%3B36300.000')
-#received_link.set_options_selenium()
-#received_link.start_selenium_browser('https://www.ozon.ru/category/suhie-korma-dlya-koshek-12349/probalance-32169982/?deny_category_prediction=true&from_global=true&sorting=ozon_card_price&text=корм+для+кошек+сухой&weight=10000.000%3B36300.000')
-#print(received_link.get_price(1))

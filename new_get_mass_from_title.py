@@ -33,7 +33,7 @@ def search_for_mass_in_gramm(stroka):
     match = re.search(r'\d{1,4}\s?(г|гр)\b', stroka)
     if match:
         return float(re.search('\d*', match[0])[0]) * float(re.search('по\s{,1}\d*', match[0])[0][3:]) / 1000
-        #return float(re.search('\(?\d{1,}[.,]{,1}\d*', match[0])[0].replace(',', '.'))
+
 
 
 def search_for_mass_composite_product_gramm(stroka):
@@ -43,7 +43,6 @@ def search_for_mass_composite_product_gramm(stroka):
 
 def search_for_mass_composite_product_kg(stroka):
     match = re.search('\d*\s{,1}шт\s{1,}\d{1,3}\S{,1}\d{,3}\s{0,}кг', stroka)
-    #print(match)
     if match:
         return int(re.search('\d*', match[0])[0]) * float(re.search('по\s{,1}\d*', match[0])[0][3:])
 
