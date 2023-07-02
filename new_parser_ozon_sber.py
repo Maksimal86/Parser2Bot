@@ -243,8 +243,7 @@ class Reference_Sber(Browser):
         price = card.find('div', class_='item-price').text.replace(' ', '')[:-1]
         print ('price = ',price )
         return int(price) - int(Reference_Sber.get_discont(self, card))
-       # except:
-       #     print('str 246 except', sys.exc_info() ,card.find('div', class_='item-title'))
+
 
     def get_reference_on_product(self, card):
         return 'https://sbermegamarket.ru' + card.find('a').get('href')
@@ -262,7 +261,7 @@ class Reference_Sber(Browser):
                 discont = '0'
         return discont
 
-# card  - это список. Переработать, исходя из этого
+
 
     def get_mass_product_in_kg(self, card):
         return new_get_mass_from_title.search_of_mass_product(Reference_Sber.get_title(self, card))
@@ -300,7 +299,7 @@ class Reference_Sber(Browser):
         return price_list_of_products
     def result_for_bot(self):
         pass
-        #for in Reference_Ozon.
+
 
 def main_function_get_product_data(reference):
     if reference[:16] == 'https://www.ozon':
@@ -316,8 +315,7 @@ def main_function_get_product_data(reference):
         received_link.get_next_page()
     received_link.get_result_for_bot(new_big_dict)
     received_link.stop_selenium()
-    #except:
-    #print('main function', sys.exc_info())
+
 def test(reference):
     received_link = Reference_Sber(reference)
     card = received_link.get_cards_of_product()
