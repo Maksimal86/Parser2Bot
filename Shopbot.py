@@ -2,7 +2,7 @@
 import asyncio, os, json
 import timer, tokenbot
 import datetime, sys
-import ozon, SberMM
+import ozon, SberMM, new_parser_ozon_sber
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.utils.callback_data import CallbackData
@@ -79,12 +79,12 @@ async def auto_start():
                 if mon_ref == 'True\n' and message: # проверяем, что файл содержит True
                     schetchik += 1
                     message = json.loads(message)  # переводим строку в словарь
-                    if l_ref(message['from']['id']) == []:# Файл с сылками пуст
+                    if get_list_reference(message['from']['id']) == []:# Файл с сылками пуст
                         print('continue')
                         continue
                     print("str79 message", message)
-                    for i in l_ref(message['from']['id']):  # передали список ссылок из файла monitor_list_ref()
-                        print(l_ref(message['from']['id']))
+                    for i in get_list_reference(message['from']['id']):  # передали список ссылок из файла monitor_list_ref()
+                        print(get_list_reference(message['from']['id']))
                         print('str82', message['from']['id'])
                         message['text'] = i[:-1]  # "общую" ссылку подменили  на одну из отслеживаемых ссылок
                         print('str84 запуск sbor_ozon_sber()  из auto_start ')
@@ -95,14 +95,14 @@ async def auto_start():
             print('Количество проверенных файлов=', schetchik, "большой перерыв")
             await asyncio.sleep(600)
 
-def l_ref(userid): # возвращаем список ссылок из файла
+def get_list_reference(userid): # возвращаем список ссылок из файла
     with open (f'monitor_list_ref{userid}.txt','a+', encoding='utf-8', errors='ignore') as file:
         file.seek(0)
         fileread=file.readlines()[:]
         return fileread
 
 #  функция добавляет ссылку в файл со списком ссылок
-async def add_l_ref(callback: types.CallbackQuery):
+async def add_in_list_reference(callback: types.CallbackQuery):
     with open(f'monitor_list_ref{callback["from"]["id"]}.txt', 'r+', encoding='utf-8', errors='ignore') as file:# был r+
         print('str101 ','run', callback.data)
         for st in file.readlines():
@@ -121,10 +121,10 @@ async def add_l_ref(callback: types.CallbackQuery):
                 await callback.answer('ссылка добавлена')
 
 
-async def del_l_ref(callbackid1):
+async def remove_link_from_list(callbackid1):
     try:
         lr = []
-        for st in l_ref(callbackid1):
+        for st in get_list_reference(callbackid1):
             print('str 122 callbackid1', callbackid1)
             print('str123 mess_ref', mess_ref)
             print('str124',st)
@@ -151,67 +151,45 @@ async def sbor_ozon_sber(message): # функция вызвана с перво
     but_inl12 = InlineKeyboardButton(text='Закончить отслеживать', callback_data='finish_inl')
     but_inl22 = InlineKeyboardButton(text='Продолжить отслеживать', callback_data='no_inl2')
     klava2.add(but_inl22, but_inl12)
-    schoz = 0  # счетчик количества проверенных ссылок
-    schsb = 0
-    if message['text'][:12] == 'https://sber':  # если боту прислали ссылку и это ссылка сбера
-        list_sber = SberMM.sberm(message['text'])[:]  # создаем новый список - результат вызова функции SberMM.sberm
-        if l_ref(message['from']['id']) == []:  # если в списке ссылок еще ничего нет
-            print('str152, ссылка не  в списке' + str(message['text']), l_ref(message.from_user.id))
-            for i in list_sber:
-                await bot.send_message(message.from_user.id, str(i),
-                                       reply_markup=klava)  # вызываем соответствующую инлайн клавиатуру с вопросом "начать отслеживать"
-        else:  # если список не пуст
-            for j in l_ref(message['from']['id']):  # проверяем вхождение текущей ссылки запроса в список проверяемых ссылок
-                # для того, чтобы вызвать соответствующю  инлайн клавиатуру
-                print('str159', j, message['text'])
-                schsb+=1
-                if message['text'] + '\n' == j:  ########## если  ссылка в списке
-                    for i in list_sber:
-                        await bot.send_message(message['from']['id'], str(i),
-                                               reply_markup=klava2)  # вызываем клавиатуру с вопросом " закончить отслеживать"
-                        print('str165 ссылка в списке ')
-                    break
-                elif schsb == len(l_ref(message['from']['id'])): # проверяем наличие ссылки в последнее строке списка
-                    print('str168, ссылка не  в списке ' + str(message['text']), l_ref(message['from']['id']))
-                    for i in list_sber:
-                        await bot.send_message(message.from_user.id, i,
-                                               reply_markup=klava)  # вызываем соответствующую инлайн клавиатуру с вопросом "начать отслеживать"
-                else:
-                    continue
-    elif message['text'][:16] == 'https://www.ozon':
-        list_ozon = ozon.ozon(message['text'])[:]  # создаем новый список - результат вызова функции ozon.ozon()
-        if l_ref(message['from']['id']) == []:  # если в списке ссылок еще ничего нет
-            print('str177, ссылка не  в списке' + str(message['text']), l_ref(message['from']['id']))
-            for i in list_ozon:
-                await bot.send_message(message['from']['id'], i,
-                                       reply_markup=klava)  # вызываем соответствующую инлайн клавиатуру с вопросом "начать отслеживать"
-        else:  # если список не пуст
-            for j in l_ref(message['from']['id']):  # проверяем вхождение текущей ссылки запроса в список проверяемых ссылок
-                schoz += 1
-                print('str184', j, message['text'])
-                if message['text'] + '\n' == j:  ################ если  ссылка в списке
-                    for i in list_ozon:
-                        await bot.send_message(message['from']['id'], i,
-                                               reply_markup=klava2)  # вызываем клавиатуру с вопросом " закончить отслеживать"
-                        print('str189 ссылка в списке\n', 'sbor_ozon_sber(message) завершена')
-                    break
-                elif schoz == len(l_ref(message['from']['id'])):  # проверяем, чтобы проверяемая ссылка была последней в списке
-                    print('str192 ссылка не  в списке', str(message['text']), l_ref(message['from']['id']))
-                    for i in list_ozon:
-                        await bot.send_message(message['from']['id'], i,
-                                               reply_markup=klava)  # вызываем соответствующую инлайн клавиатуру с вопросом "начать отслеживать"
-                else:
-                    print('str197 continue ', 'len=', len(l_ref(message['from']['id'])), 'sch=', schoz)
-                    continue
+    link_counter = 0  # счетчик количества проверенных ссылок
+    print('message - ', message['text'])
+    result_for_bot = new_parser_ozon_sber.main_function_get_product_data(message['text'])[:]  # создаем новый список - результат вызова функции SberMM.sberm
+    if get_list_reference(message['from']['id']) == []:  # если в списке ссылок еще ничего нет
+        print('str152, ссылка не  в списке' + str(message['text']), get_list_reference(message.from_user.id))
+        for i in result_for_bot:
+            await bot.send_message(message.from_user.id, str(i).translate({ord(i): " " for i in "''() "}).replace('\\n', '\n'),
+                                   reply_markup=klava)  # вызываем соответствующую инлайн клавиатуру с вопросом "начать отслеживать"
+    else:  # если список не пуст
+        for j in get_list_reference(message['from']['id']):  # проверяем вхождение текущей ссылки запроса в список проверяемых ссылок
+            # для того, чтобы вызвать соответствующю  инлайн клавиатуру
+            print('str159', j, message['text'])
+            link_counter += 1
+            if message['text'] + '\n' == j:  ########## если  ссылка в списке
+                for i in result_for_bot:
+                    print('str160 shopbot, i', str(i).translate({ord(i): " " for i in "''() "}))
+                    await bot.send_message(message['from']['id'], str(i).translate({ord(i): " " for i in "''() "}).replace('\\n', '\n'),
+                                           reply_markup=klava2)  # вызываем клавиатуру с вопросом " закончить отслеживать"
+                    print('str165 ссылка в списке ')
+                break
+            elif link_counter == len(get_list_reference(message['from']['id'])): # проверяем наличие ссылки в последнее строке списка
+                print('str168, ссылка не  в списке ' + str(message['text']), get_list_reference(message['from']['id']))
+                for i in result_for_bot:
+                    await bot.send_message(message.from_user.id, str(i).translate({ord(i): " " for i in "''() "}).replace('\\n', '\n'),
+                                           reply_markup=klava)  # вызываем соответствующую инлайн клавиатуру с вопросом "начать отслеживать"
+            else:
+                print( 'str 179 continue')
+                continue
+
+
 
 async def monitor_data(message):  #получили message один из файла
-    print('str201 run monitor_data', message.from_user.id, l_ref(message.from_user.id))
-    if l_ref(message.from_user.id) == []:
+    print('str201 run monitor_data', message.from_user.id, get_list_reference(message.from_user.id))
+    if get_list_reference(message.from_user.id) == []:
         await bot.send_message(message.from_user.id, "Ничего не отслеживается")
         await bot.send_message(message.from_user.id, 'Добавьте ссылку для отслеживания')
     else:
         await bot.send_message(message.from_user.id, 'собираем данные по списку')
-        for i in l_ref(message.from_user.id):  # передали список ссылок
+        for i in get_list_reference(message.from_user.id):  # передали список ссылок
             print('str208',message)
             message['text'] = i[:-1]  # подменили "сбор данных" на ссылку и убрали знак переноса
             # сюда надо передать message
@@ -229,7 +207,7 @@ async def monitor_data(message):  #получили message один из фай
 async def start_tracking(callback: types.CallbackQuery):
     print('str223 callback', callback.data)
     if  callback.data == 'start_inl' and callback["from"]["id"] == mess_ref['from']['id']: # нажата кнопка "начать отслеживание
-        await add_l_ref(callback)
+        await add_in_list_reference(callback)
         with open(f'monitor_ref{callback["from"]["id"]}.txt', 'w', encoding='utf-8', errors='ignore') as file:
             file.write('True'+'\n' + str(mess_ref))
         #await auto_start()
@@ -241,7 +219,7 @@ async def start_tracking(callback: types.CallbackQuery):
         #    file.write('False')
         await callback.answer('Отслеживание остановлено')
     elif callback.data == 'finish_inl':# нажата кнопка "Закончить отслеживать"
-        await del_l_ref(callback['from']['id'])
+        await remove_link_from_list(callback['from']['id'])
         await callback.answer('Этот товар больше не отслеживается')
 
     elif callback.data =='no_inl2':# нажата кнопка "Продолжить отслеживать"

@@ -42,7 +42,6 @@ class Browser(ABC):
     def stop_selenium(self):
         self.driver.close()
         self.driver.quit()
-        print('stop')
 
     @abstractmethod
     def get_next_page(self):
@@ -63,7 +62,6 @@ class Browser(ABC):
     def get_price_of_product_per_kg(self, teg):
         self.massa_of_product_in_kg = new_get_mass_from_title.search_of_mass_product(
             self.get_title( teg))
-        #print('str98',Reference_Ozon.get_mass_product_in_kg(self,teg))
         if self.massa_of_product_in_kg is None:
             return None
         else:
@@ -80,34 +78,33 @@ class Browser(ABC):
         price_list_of_products = self.get_price_list_of_products()
         dict_price_list_of_product = {}
         for i in price_list_of_products:
-            #print (i)
             if i[0]:
-                dict_price_list_of_product[i[0]] = 'руб/кг\n' + str(i[1]) + '\n ' + 'Цена за единицу товара -' + \
-                                            str(i[2]).strip() + ' руб.' + str(i[3])
-                #return dict_price_list_of_product_with_mass
+                dict_price_list_of_product[i[0]] = 'руб/кг \n' + str(i[1]) + '\n ' + 'Цена за единицу товара -' + \
+                                            str(i[2]).strip() + ' руб.' +'\n' + str(i[3])
             else:
+                ######### доделать товары без массы
+                print('str89 else')
                 dict_price_list_of_product[float(i[1])] = 'руб\n' + str(i[2]) + '\n' + str(i[3])
         return dict_price_list_of_product
     def add_new_data_to_dict(self, new_big_dict):
         new_big_dict.update(self.get_dict_results_for_products())
         return new_big_dict
+
     def sorting_keys_of_dict(self, new_big_dict ):
-        #return sorted(Reference_Ozon.get_dict_results_for_products(self).keys())
-        print(sorted(self.add_new_data_to_dict( new_big_dict).keys()))
         return sorted(self.add_new_data_to_dict(new_big_dict).keys())
+
     def get_result_for_bot(self, new_big_dict):
-        print('new_big_dict', new_big_dict)
         n = 0
         result_for_bot = []
         for key in self.sorting_keys_of_dict(new_big_dict):
             n += 1
-            print('№', n, str(key) + '-' + new_big_dict[key].translate({ord(i): " " for i in "'' "}))
-            result_for_bot.append(('№', n, str(key) + '-' + new_big_dict[key].translate({ord(i): " " for i in "'' "})))
+            print('№', n, str(key) + '-' + new_big_dict[key].translate({ord(i): " " for i in "'' ()"}))
+            result_for_bot.append(('№', n, str(key) + '-' + new_big_dict[key].translate({ord(i): " " for i in "''() "})))
             if n == Browser.number_of_displayed_price_options:
                 break
         return result_for_bot
     number_of_displayed_price_options = 5
-'https://www.ozon.ru/category/suhie-korma-dlya-koshek-12349/?deny_category_prediction=true&page=2&tf_state=PULKkqCBeYtuvH9FDiq2YTqlB8lHom0Co_Ie8y6MXKKfhcj4'
+
 class Reference_Ozon(Browser):
     def __init__(self, reference):
         self.reference = reference
@@ -130,25 +127,15 @@ class Reference_Ozon(Browser):
             return int(self.driver.find_element(By.XPATH,
                                          f'//*[@id="paginatorContent"]/div[1]/div/div[{teg}]/div[1]/div[1]/span/span[1]').text.translate(
                 {ord(i): None for i in [' ', '₽', ' ']}))
+
     def get_title(self, teg):
         title_product = self.driver.find_element(By.XPATH,f'//*[@id="paginatorContent"]/div[1]/div/div[{teg}]/div[1]/a/span/span[1]').text
 
         return title_product
+
     def get_reference_on_product(self, teg):
         return self.driver.find_element(By.XPATH,f'//*[@id="paginatorContent"]/div[1]/div/div[{teg}]/div[1]/a').get_attribute("href")
 
-    def get_price_of_product_per_kg(self, teg):
-        self.massa_of_product_in_kg = new_get_mass_from_title.search_of_mass_product(
-            Reference_Ozon.get_title(self, teg))
-        #print('str98',Reference_Ozon.get_mass_product_in_kg(self,teg))
-        if self.massa_of_product_in_kg is None:
-            return None
-        else:
-            try:
-                self.price_of_product_per_kg = Reference_Ozon.get_price(self, teg) / self.massa_of_product_in_kg
-                return Reference_Ozon.get_price(self, teg) / self.massa_of_product_in_kg
-            except ZeroDivisionError:
-                return  None
     def get_price_list_of_products(self):
         number_of_cards_per_page = 32
         data_of_product = []
@@ -168,42 +155,21 @@ class Reference_Ozon(Browser):
             except NoSuchElementException:
                 break
         return price_list_of_products
-    def get_dict_results_for_products(self):
-        price_list_of_products = Reference_Ozon.get_price_list_of_products(self)
-        dict_price_list_of_product = {}
-        for i in price_list_of_products:
-            #print (i)
-            if i[0]:
-                dict_price_list_of_product[i[0]] = 'руб/кг\n' + str(i[1]) + '\n ' + 'Цена за единицу товара -' + \
-                                            str(i[2]).strip() + ' руб.' + str(i[3])
-                #return dict_price_list_of_product_with_mass
-            else:
-                dict_price_list_of_product[float(i[1])] = 'руб\n' + str(i[2]) + '\n' + str(i[3])
-        return dict_price_list_of_product
+
     def add_new_data_to_dict(self, new_big_dict):
         new_big_dict.update(Reference_Ozon.get_dict_results_for_products(self))
         return new_big_dict
+
     def sorting_keys_of_dict(self, new_big_dict ):
-        #return sorted(Reference_Ozon.get_dict_results_for_products(self).keys())
-        print(sorted(Reference_Ozon.add_new_data_to_dict(self, new_big_dict).keys()))
         return sorted(Reference_Ozon.add_new_data_to_dict(self, new_big_dict).keys())
-    def get_result_for_bot(self, new_big_dict):
-        print('new_big_dict', new_big_dict)
-        n = 0
-        result_for_bot = []
-        for key in Reference_Ozon.sorting_keys_of_dict(self, new_big_dict):
-            n += 1
-            print('№', n, str(key) + '-' + new_big_dict[key].translate({ord(i): " " for i in "'' "}))
-            result_for_bot.append(('№', n, str(key) + '-' + new_big_dict[key].translate({ord(i): " " for i in "'' "})))
-            if n == Browser.number_of_displayed_price_options:
-                break
-        return result_for_bot
+
     number_of_displayed_price_options = 5
 
 class Reference_Sber(Browser):
     def __init__(self, reference):
         self.reference = reference
         self.driver = Browser.start_selenium_browser(self, reference)
+
     def get_soup_pagehtml(self):
         try:
             ActionChains(self.driver).click(self.driver.find_element(By.XPATH,
@@ -217,10 +183,8 @@ class Reference_Sber(Browser):
 
 
     def get_next_page(self):
-        time.sleep(5)
         ActionChains(self.driver).click(self.driver.find_element(By.CSS_SELECTOR,
                                                                 '#app > main > div > div.catalog-default__container > div.catalog-default__department-container > div > div.container > div.catalog-listing-content > div.r > div.sticky-element-wrapper > div > button')).perform()
-
 
     def get_cards_of_product(self):
         soup = Reference_Sber.get_soup_pagehtml(self)
@@ -236,22 +200,16 @@ class Reference_Sber(Browser):
             card = soup.find_all('div', class_='catalog-item')
             return card
 
-
     def get_price(self, card):
-
-        #try:
         price = card.find('div', class_='item-price').text.replace(' ', '')[:-1]
-        print ('price = ',price )
         return int(price) - int(Reference_Sber.get_discont(self, card))
-       # except:
-       #     print('str 246 except', sys.exc_info() ,card.find('div', class_='item-title'))
 
     def get_reference_on_product(self, card):
         return 'https://sbermegamarket.ru' + card.find('a').get('href')
 
     def get_title(self, card):
-        print(card.find('div', class_='item-title').get_text())
-        return card.find('div', class_='item-title').get_text()
+        return card.find('div', class_='item-title').get_text().strip()
+
     def get_discont(self,card):
         try:
             discont = card.find('span', class_='bonus-amount').replace(' ', '')
@@ -262,15 +220,12 @@ class Reference_Sber(Browser):
                 discont = '0'
         return discont
 
-# card  - это список. Переработать, исходя из этого
-
     def get_mass_product_in_kg(self, card):
         return new_get_mass_from_title.search_of_mass_product(Reference_Sber.get_title(self, card))
 
     def get_price_of_product_per_kg(self,card):
         self.massa_of_product_in_kg = Reference_Sber.get_mass_product_in_kg(self, card)
         if self.massa_of_product_in_kg is None:
-            print('self.m...',self.massa_of_product_in_kg)
             return None
         else:
             try:
@@ -286,21 +241,15 @@ class Reference_Sber(Browser):
         for i in card:
             price = self.get_price(i)
             if Reference_Sber.get_price_of_product_per_kg(self, i) is None:
-                print('str288 None')
                 continue
             else:
-                print('str288')
                 data_of_product.append(self.price_of_product_per_kg)
-                print('str290')
                 data_of_product.append(Reference_Sber.get_title(self,i))
                 data_of_product.append(price)
                 data_of_product.append(self.get_reference_on_product(i))
                 price_list_of_products.append(data_of_product)
                 data_of_product = []
         return price_list_of_products
-    def result_for_bot(self):
-        pass
-        #for in Reference_Ozon.
 
 def main_function_get_product_data(reference):
     if reference[:16] == 'https://www.ozon':
@@ -314,10 +263,10 @@ def main_function_get_product_data(reference):
     for i in range(number_of_pages_viewed):
         new_big_dict = received_link.add_new_data_to_dict(new_big_dict)
         received_link.get_next_page()
-    received_link.get_result_for_bot(new_big_dict)
+    result_for_bot = received_link.get_result_for_bot(new_big_dict)
     received_link.stop_selenium()
-    #except:
-    #print('main function', sys.exc_info())
+    return result_for_bot
+
 def test(reference):
     received_link = Reference_Sber(reference)
     card = received_link.get_cards_of_product()
@@ -326,6 +275,7 @@ def test(reference):
         massa = received_link.get_mass_product_in_kg(i)
         received_link.get_price_of_product_per_kg(i)
         print('massa = ', massa, 'price =', price, 'цена за кг -',   received_link.price_of_product_per_kg, '\n', received_link.get_reference_on_product(i))
-        print (received_link.get_title(i))
-main_function_get_product_data('https://sbermegamarket.ru/catalog/korma-dlya-koshek/#?related_search=Корма%20для%20кошек')
+
+if __name__ == "__main__":
+    main_function_get_product_data(reference = 'https://sbermegamarket.ru/catalog/korma-dlya-koshek/#?related_search=Корма%20для%20кошек')
 #test('https://sbermegamarket.ru/catalog/korma-dlya-koshek/#?related_search=Корма%20для%20кошек')
