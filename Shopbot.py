@@ -32,24 +32,24 @@ async def send_message(message):
 
     if message['text'][:12] == 'https://sber' or message['text'][:16] == 'https://www.ozon':
         await bot.send_message(message.from_user.id, 'обрабатываю запрос...', reply_markup=but)
-        await sbor_ozon_sber(message)
+        await starting_parsing(message)
     elif message['text'] == 'Dogs Chappi Ozon':
         print(type(message))
         await bot.send_message(message.from_user.id, 'обрабатываю запрос...', reply_markup=but)
         message['text']='https://www.ozon.ru/category/korm-dlya-sobak-12302/chappi-27604755/?category_was_predicted=true&deny_category_prediction=true&from_global=true&text=чаппи'
-        await sbor_ozon_sber(message)
+        await starting_parsing(message)
     elif message['text'] == 'Cats ProB Ozon':
         await bot.send_message(message.from_user.id, 'обрабатываю запрос...', reply_markup=but)
         message['text']='https://www.ozon.ru/category/suhie-korma-dlya-koshek-12349/probalance-32169982/?deny_category_prediction=true&from_global=true&sorting=ozon_card_price&text=корм+для+кошек+сухой&weight=10000.000%3B36300.000'
-        await sbor_ozon_sber(message)
+        await starting_parsing(message)
     elif message['text'] =='Cats ProB SMM':
         await bot.send_message(message.from_user.id, 'обрабатываю запрос...', reply_markup=but)
         message['text'] ='https://sbermegamarket.ru/catalog/?q=корма%20для%20кошек%20probalance&suggestionType=brand'
-        await sbor_ozon_sber(message)
+        await starting_parsing(message)
     elif message['text'] =='Dogs Chappi SMM':
         await bot.send_message(message.from_user.id, 'обрабатываю запрос...', reply_markup=but)
         message['text']='https://sbermegamarket.ru/catalog/?q=чаппи'
-        await sbor_ozon_sber(message)
+        await starting_parsing(message)
     elif message['text'] == 'сбор данных':
         await monitor_data(message)
         await bot.send_message(message.from_user.id, 'обрабатываю запрос...', reply_markup=but)
@@ -87,8 +87,8 @@ async def auto_start():
                         print(get_list_reference(message['from']['id']))
                         print('str82', message['from']['id'])
                         message['text'] = i[:-1]  # "общую" ссылку подменили  на одну из отслеживаемых ссылок
-                        print('str84 запуск sbor_ozon_sber()  из auto_start ')
-                        await sbor_ozon_sber(message)
+                        print('str84 запуск starting_parsing()  из auto_start ')
+                        await starting_parsing(message)
                         await asyncio.sleep(60)  # задержка между опросами по ссылкам # прошлись по ссылкам из одного файла
                         print('str87 итерация for окончена')
                     print('str88 for окончен')
@@ -123,30 +123,30 @@ async def add_in_list_reference(callback: types.CallbackQuery):
 
 async def remove_link_from_list(callbackid1):
     try:
-        lr = []
+        link_to_be_deleted = []
         for st in get_list_reference(callbackid1):
             print('str 122 callbackid1', callbackid1)
             print('str123 mess_ref', mess_ref)
             print('str124',st)
             print('str125',mess_ref['text']+'\n')
             if st != mess_ref['text'] +'\n':
-                lr.append(st)
+                link_to_be_deleted.append(st)
     except:
         print('str 130 Поздно нажали "Закончить отслеживать"')
         print(str(sys.exc_info()))
     with open(f'monitor_list_ref{callbackid1}.txt', 'w', encoding='utf-8', errors='ignore') as file:
 
-        for i in lr:
+        for i in link_to_be_deleted:
             file.write(i)
 
 # повторный вызов последнего в списке, while сделать
-async def sbor_ozon_sber(message): # функция вызвана с первой ссылкой из списка
-    print('str137 run sbor...()')
+async def starting_parsing(message): # функция вызвана с первой ссылкой из списка
+    print('ShBstr144 starting_parsing()...')
     klava = InlineKeyboardMarkup(row_width=2)  # в строке по две кнопки
     but_inl1 = InlineKeyboardButton(text='Начать отслеживать', callback_data='start_inl')
     but_inl2 = InlineKeyboardButton(text='Не отслеживать', callback_data='no_inl')
     klava.add(but_inl1, but_inl2)
-    print('str142 message', message)
+    print('ShBstr149 message', message)
     klava2 = InlineKeyboardMarkup(row_width=2)
     but_inl12 = InlineKeyboardButton(text='Закончить отслеживать', callback_data='finish_inl')
     but_inl22 = InlineKeyboardButton(text='Продолжить отслеживать', callback_data='no_inl2')
@@ -155,49 +155,49 @@ async def sbor_ozon_sber(message): # функция вызвана с перво
     print('message - ', message['text'])
     result_for_bot = new_parser_ozon_sber.main_function_get_product_data(message['text'])[:]  # создаем новый список - результат вызова функции SberMM.sberm
     if get_list_reference(message['from']['id']) == []:  # если в списке ссылок еще ничего нет
-        print('str152, ссылка не  в списке' + str(message['text']), get_list_reference(message.from_user.id))
+        print('str158, ссылка не  в списке' + str(message['text']), get_list_reference(message.from_user.id))
         for i in result_for_bot:
             await bot.send_message(message.from_user.id, str(i).translate({ord(i): " " for i in "''() "}).replace('\\n', '\n'),
                                    reply_markup=klava)  # вызываем соответствующую инлайн клавиатуру с вопросом "начать отслеживать"
     else:  # если список не пуст
         for j in get_list_reference(message['from']['id']):  # проверяем вхождение текущей ссылки запроса в список проверяемых ссылок
             # для того, чтобы вызвать соответствующю  инлайн клавиатуру
-            print('str159', j, message['text'])
+            print('ShBstr165', j, message['text'])
             link_counter += 1
             if message['text'] + '\n' == j:  ########## если  ссылка в списке
                 for i in result_for_bot:
-                    print('str160 shopbot, i', str(i).translate({ord(i): " " for i in "''() "}))
+                    print('str169 shopbot, i', str(i).translate({ord(i): " " for i in "''() "}))
                     await bot.send_message(message['from']['id'], str(i).translate({ord(i): " " for i in "''() "}).replace('\\n', '\n'),
                                            reply_markup=klava2)  # вызываем клавиатуру с вопросом " закончить отслеживать"
-                    print('str165 ссылка в списке ')
+                    print('ShBstr172 ссылка в списке ')
                 break
             elif link_counter == len(get_list_reference(message['from']['id'])): # проверяем наличие ссылки в последнее строке списка
-                print('str168, ссылка не  в списке ' + str(message['text']), get_list_reference(message['from']['id']))
+                print('ShBstr168, ссылка не  в списке ' + str(message['text']), get_list_reference(message['from']['id']))
                 for i in result_for_bot:
                     await bot.send_message(message.from_user.id, str(i).translate({ord(i): " " for i in "''() "}).replace('\\n', '\n'),
                                            reply_markup=klava)  # вызываем соответствующую инлайн клавиатуру с вопросом "начать отслеживать"
             else:
-                print( 'str 179 continue')
+                print( 'ShBstr 180 continue')
                 continue
 
 
 
 async def monitor_data(message):  #получили message один из файла
-    print('str201 run monitor_data', message.from_user.id, get_list_reference(message.from_user.id))
+    print('str186 run monitor_data', message.from_user.id, get_list_reference(message.from_user.id))
     if get_list_reference(message.from_user.id) == []:
         await bot.send_message(message.from_user.id, "Ничего не отслеживается")
         await bot.send_message(message.from_user.id, 'Добавьте ссылку для отслеживания')
     else:
         await bot.send_message(message.from_user.id, 'собираем данные по списку')
         for i in get_list_reference(message.from_user.id):  # передали список ссылок
-            print('str208',message)
+            print('ShBstr193',message)
             message['text'] = i[:-1]  # подменили "сбор данных" на ссылку и убрали знак переноса
             # сюда надо передать message
-            print('str211 запуск sbor_ozon_sber()  из monitor_data ')
-            await sbor_ozon_sber(message)
+            print('ShBstr196 запуск starting_parsing()  из monitor_data ')
+            await starting_parsing(message)
             await asyncio.sleep(60) # задержка между опросами по ссылкам # прошлись по ссылкам из одного файла
-            print('str214 итерация for окончена')
-        print('str215 for окончен')
+            print('ShBstr199 итерация for окончена')
+        print('ShBstr200 for окончен')
 
 
 

@@ -8,6 +8,7 @@ import undetected_chromedriver
 import time, datetime, sys, new_get_mass_from_title, lxml, re
 from bs4 import BeautifulSoup
 class Browser(ABC):
+    number_of_displayed_price_options = 5
     def set_options_selenium(self):
         #options = webdriver.ChromeOptions()
         options = undetected_chromedriver.ChromeOptions()
@@ -29,6 +30,7 @@ class Browser(ABC):
         return options
     def start_selenium_browser(self, reference):
         self.options = Browser.set_options_selenium(self)
+        self.reference = reference
         self.s = Service(executable_path=r'C:\yandexdriver.exe')
         self.s = Service(executable_path=r'C:\chromedriver.exe')
         #self.driver = webdriver.Chrome(options=self.options, service=self.s)
@@ -43,42 +45,83 @@ class Browser(ABC):
         self.driver.close()
         self.driver.quit()
 
+    def get_soup_pagehtml(self):
+        time.sleep(3)
+        pagehtml = self.driver.page_source
+        soup = BeautifulSoup(pagehtml, 'lxml')
+        return soup
     @abstractmethod
-    def get_next_page(self):
+    def get_cards_of_products(self):
+        pass
+    @abstractmethod
+    def get_next_page(self, i):
         pass
 
     @abstractmethod
-    def get_price(self, teg):
+    def get_price_of_product(self):
         pass
 
     @abstractmethod
-    def get_title(self, teg):
+    def get_title_of_product(self):
         pass
 
     @abstractmethod
-    def get_reference_on_product(self, teg):
+    def get_reference_on_product(self):
         pass
 
-    def get_price_of_product_per_kg(self, teg):
-        self.massa_of_product_in_kg = new_get_mass_from_title.search_of_mass_product(
-            self.get_title( teg))
-        if self.massa_of_product_in_kg is None:
-            return None
-        else:
+    def get_mass_product_in_kg(self):
+        self.list_of_masses_products_in_kg = []
+        for i in self.list_titles_of_products:
+            self.list_of_masses_products_in_kg.append(new_get_mass_from_title.search_of_mass_product(i))
+            print('massa =', self.list_of_masses_products_in_kg )
+
+    def get_price_of_product_per_kg(self):
+        self.list_prices_of_products_per_kg = []
+        for i in range(self.number_of_card_per_page):
             try:
-                self.price_of_product_per_kg = self.get_price(teg) / self.massa_of_product_in_kg
-                return self.get_price(teg) / self.massa_of_product_in_kg
-            except ZeroDivisionError:
-                return  None
+                print('self.list_of_masses_products_in_kg[i] = ', self.list_of_masses_products_in_kg[i])
+                try:
+                    price_of_product_per_kg =round( self.list_prices_on_products[i] / self.list_of_masses_products_in_kg[i])
+                except TypeError:
+                    print('TypeError', self.list_of_masses_products_in_kg[i])
+                    continue
+                self.list_prices_of_products_per_kg.append(price_of_product_per_kg)
+                print('price_of_product_per_kg=', price_of_product_per_kg)
+            except IndexError:
+                break
 
-    @abstractmethod
+
     def get_price_list_of_products(self):
-        pass
+        data_of_product = []
+        price_list_of_products = []
+        self.get_cards_of_products()
+        self.get_price_of_product()
+        self.get_title_of_product()
+        self.get_reference_on_product()
+        self.get_mass_product_in_kg()
+        self.get_price_of_product_per_kg()
+        for i in range(self.number_of_card_per_page):
+            try:
+                if self.list_prices_of_products_per_kg[i] is None:
+                    print('str 159 None per_kg')
+                    continue
+                else:
+                    data_of_product.append(self.list_prices_of_products_per_kg[i])
+                    data_of_product.append( self.list_titles_of_products[i])
+                    data_of_product.append(self.list_prices_on_products[i])
+                    data_of_product.append(self.list_references_of_products[i])
+                    price_list_of_products.append(data_of_product)
+                    data_of_product = []
+            except (NoSuchElementException, IndexError):
+                print('str 169 NoSuchElement or IndexError', sys.exc_info())
+                break
+        return price_list_of_products
+
     def get_dict_results_for_products(self):
         price_list_of_products = self.get_price_list_of_products()
         dict_price_list_of_product = {}
         for i in price_list_of_products:
-            if i[0]:
+            if i[0]:   # проверка на наличие массы продукта   исправить
                 dict_price_list_of_product[i[0]] = 'руб/кг \n' + str(i[1]) + '\n ' + 'Цена за единицу товара -' + \
                                             str(i[2]).strip() + ' руб.' +'\n' + str(i[3])
             else:
@@ -86,94 +129,88 @@ class Browser(ABC):
                 print('str89 else')
                 dict_price_list_of_product[float(i[1])] = 'руб\n' + str(i[2]) + '\n' + str(i[3])
         return dict_price_list_of_product
-    def add_new_data_to_dict(self, new_big_dict):
-        new_big_dict.update(self.get_dict_results_for_products())
-        return new_big_dict
+    def add_data_to_dict(self, dict_with_collected_data):
+        print('run add_data_to_dict')
+        dict_with_collected_data.update(self.get_dict_results_for_products())
+        return dict_with_collected_data
 
-    def sorting_keys_of_dict(self, new_big_dict ):
-        return sorted(self.add_new_data_to_dict(new_big_dict).keys())
+    def sorting_keys_of_dict(self, dict_with_collected_data ):
+        return sorted(self.add_data_to_dict(dict_with_collected_data).keys())
 
-    def get_result_for_bot(self, new_big_dict):
+    def get_result_for_bot(self, dict_with_collected_data):
         n = 0
         result_for_bot = []
-        for key in self.sorting_keys_of_dict(new_big_dict):
+        for key in self.sorting_keys_of_dict(dict_with_collected_data):
             n += 1
-            print('№', n, str(key) + '-' + new_big_dict[key].translate({ord(i): " " for i in "'' ()"}))
-            result_for_bot.append(('№', n, str(key) + '-' + new_big_dict[key].translate({ord(i): " " for i in "''() "})))
+            print('№', n, str(key) + '-' + dict_with_collected_data[key].translate({ord(i): " " for i in "'' ()"}))
+            result_for_bot.append(('№', n, str(key) + '-' + dict_with_collected_data[key].translate({ord(i): " " for i in "''() "})))
             if n == Browser.number_of_displayed_price_options:
                 break
         return result_for_bot
-    number_of_displayed_price_options = 5
 
 class Reference_Ozon(Browser):
+
     def __init__(self, reference):
         self.reference = reference
         self.driver = Browser.start_selenium_browser(self, reference)
+        self.number_of_card_per_page = 36
 
-    def get_next_page(self):
-        try:
-            try:
-                self.driver.find_element(By.XPATH, '//*[@id="layoutPage"]/div[1]/div[2]/div[2]/div[2]/div[6]/div[2]/div/div[1]/div[2]/a/div/div').click()
-            except NoSuchElementException:
-                self.driver.find_element(By.XPATH,
-                                         '//*[@id="layoutPage"]/div[1]/div[2]/div[2]/div[2]/div[5]/div[2]/div/div[1]/div[2]/a/div/div').click()
-        except:
-            print('get_next_page', sys.exc_info())
+    def get_next_page(self,i):
+        time.sleep(3)
+        if i == 2:
+            match = re.search('from_global=true&', self.reference)
+            next_page_reference = self.reference[:match.end()] + f'page={i}&' + self.reference[match.end():]
+        else:
+            match = re.search('page=\d', self.reference)
+            next_page_reference = self.reference[:match.start()] + f'page={i}' + self.reference[match.end():]
+        Reference_Ozon.start_selenium_browser(self,next_page_reference)
+        print('next_page_reference :', next_page_reference)
 
-    def get_price(self, teg):
-        try:
-            return  int(self.driver.find_element(By.XPATH,f'//*[@id="paginatorContent"]/div[1]/div/div[{teg}]/div[1]/div[1]/div[1]').text.translate({ord(i): None for i in [' ', '₽', ' '] }))
-        except NoSuchElementException:
-            return int(self.driver.find_element(By.XPATH,
-                                         f'//*[@id="paginatorContent"]/div[1]/div/div[{teg}]/div[1]/div[1]/span/span[1]').text.translate(
-                {ord(i): None for i in [' ', '₽', ' ']}))
 
-    def get_title(self, teg):
-        title_product = self.driver.find_element(By.XPATH,f'//*[@id="paginatorContent"]/div[1]/div/div[{teg}]/div[1]/a/span/span[1]').text
+    def get_cards_of_products(self):
+        soup = Reference_Ozon.get_soup_pagehtml(self)
+        self.cards_of_products = soup.select(".widget-search-result-container")[0]
 
-        return title_product
+    def get_price_of_product(self):
+        self.list_prices_on_products = []
+        price_teg_search = self.cards_of_products.select( ".tsHeadline500Medium")
+        for i in price_teg_search:
+            price_of_product = float(i.get_text().translate({ord(i): None for i in [' ', '₽', ' '] }))
+            print("price = ", price_of_product)
+            self.list_prices_on_products.append(price_of_product)
 
-    def get_reference_on_product(self, teg):
-        return self.driver.find_element(By.XPATH,f'//*[@id="paginatorContent"]/div[1]/div/div[{teg}]/div[1]/a').get_attribute("href")
+    def get_title_of_product(self):
+        self.list_titles_of_products = []
+        title_teg_search = self.cards_of_products.select('.tsBody500Medium')
+        for i in title_teg_search:
+            title_of_product = i.get_text()
+            print('title_of_product = ', title_of_product)
+            self.list_titles_of_products.append(title_of_product)
 
-    def get_price_list_of_products(self):
-        number_of_cards_per_page = 32
-        data_of_product = []
-        price_list_of_products = []
-        for teg in range(1, number_of_cards_per_page):
-            try:
-                if Reference_Ozon.get_price_of_product_per_kg(self, teg) is None:
-                    continue
-                else:
-                    data_of_product.append(self.price_of_product_per_kg)
-                    data_of_product.append(Reference_Ozon.get_title(self, teg))
-                    data_of_product.append(Reference_Ozon.get_price(self, teg))
-                    data_of_product.append(Reference_Ozon.get_reference_on_product(self, teg))
-                    price_list_of_products.append(data_of_product)
-                    data_of_product = []
+    def get_reference_on_product(self):
+        self.temporary_list_references_of_products = []
+        self.list_references_of_products = []
+        reference_teg_search = self.cards_of_products.select('a[href^="/product"].tile-hover-target')
+        for i in reference_teg_search:
+            reference_of_product ='https://www.ozon.ru' + i['href']
+            print('referеnce_of_product = ', reference_of_product)
+            self.temporary_list_references_of_products.append(reference_of_product)
+        for i in range(len(self.temporary_list_references_of_products) - 1): #72
+            if i % 2  == 0:
+                self.list_references_of_products.append(self.temporary_list_references_of_products[i]) #48
 
-            except NoSuchElementException:
-                break
-        return price_list_of_products
 
-    def add_new_data_to_dict(self, new_big_dict):
-        new_big_dict.update(Reference_Ozon.get_dict_results_for_products(self))
-        return new_big_dict
-
-    def sorting_keys_of_dict(self, new_big_dict ):
-        return sorted(Reference_Ozon.add_new_data_to_dict(self, new_big_dict).keys())
-
-    number_of_displayed_price_options = 5
 
 class Reference_Sber(Browser):
     def __init__(self, reference):
         self.reference = reference
         self.driver = Browser.start_selenium_browser(self, reference)
+        self.number_of_card_per_page = 36
 
     def get_soup_pagehtml(self):
         try:
             ActionChains(self.driver).click(self.driver.find_element(By.XPATH,
-                                                           '/html/body/div[1]/div[1]/div[1]/div[2]/div/div/div/div/div[3]/button[1]')).perform()
+                                '/html/body/div[1]/div[1]/div[1]/div[2]/div/div/div/div/div[3]/button[1]')).perform()
             print('кнопка есть')
         except:
             print('нет кнопки')
@@ -182,33 +219,48 @@ class Reference_Sber(Browser):
         return soup
 
 
-    def get_next_page(self):
-        ActionChains(self.driver).click(self.driver.find_element(By.CSS_SELECTOR,
-                                                                '#app > main > div > div.catalog-default__container > div.catalog-default__department-container > div > div.container > div.catalog-listing-content > div.r > div.sticky-element-wrapper > div > button')).perform()
+    def get_next_page(self, i):
+        time.sleep(5)
+        match = re.search('#\?', self.reference)
+        if i == 2:
+            next_page_reference = self.reference[:match.start()] + f'page-{i}/' + self.reference[match.start():]
+        else:
+            match = re.search('page-\d', self.reference)
+            next_page_reference = self.reference[:match.start()] + f'page-{i}' + self.reference[match.end():]
+        Reference_Sber.start_selenium_browser(self,next_page_reference)
+        print(next_page_reference)
 
-    def get_cards_of_product(self):
-        soup = Reference_Sber.get_soup_pagehtml(self)
-        if soup.find_all('div', class_='catalog-item ddl_product catalog-item_in-enlarged-page') != []:
-            card = soup.find_all('div', class_='catalog-item ddl_product catalog-item_in-enlarged-page')
-            return card
+    def get_cards_of_products(self):
+        soup = Reference_Ozon.get_soup_pagehtml(self)
+        self.cards_of_products = soup.select(".catalog-listing__items.catalog-listing__items_divider")[0]
 
-        elif soup.find_all('div', class_='catalog-item ddl_product') != []:
-            card = soup.find_all('div', class_='catalog-item ddl_product')
-            return card
+    def get_price_of_product(self):
+        self.list_prices_on_products = []
+        price_teg_search = self.cards_of_products.select(".item-price")
+        for i in price_teg_search:
+            price_of_product = float(i.get_text().translate({ord(i): None for i in [' ', '₽', ' '] }))
+            print("price = ", price_of_product)
+            self.list_prices_on_products.append(price_of_product)
 
-        elif soup.find_all('div', class_='catalog-item') != 0:
-            card = soup.find_all('div', class_='catalog-item')
-            return card
+    def get_reference_on_product(self):
+        self.temporary_list_references_of_products = []
+        self.list_references_of_products = []
+        reference_teg_search = self.cards_of_products.select('.ddl_product_link[href]')
+        for i in reference_teg_search:
+            reference_of_product ='https://sbermegamarket.ru' + i['href']
+            self.temporary_list_references_of_products.append(reference_of_product)
+        for i in range(len(self.temporary_list_references_of_products) - 1): #72
+            if i % 2 == 0:
+                self.list_references_of_products.append(self.temporary_list_references_of_products[i])
+                print('referеnce_of_product = ',self.list_references_of_products)
 
-    def get_price(self, card):
-        price = card.find('div', class_='item-price').text.replace(' ', '')[:-1]
-        return int(price) - int(Reference_Sber.get_discont(self, card))
-
-    def get_reference_on_product(self, card):
-        return 'https://sbermegamarket.ru' + card.find('a').get('href')
-
-    def get_title(self, card):
-        return card.find('div', class_='item-title').get_text().strip()
+    def get_title_of_product(self):
+        self.list_titles_of_products = []
+        title_teg_search = self.cards_of_products.select('.ddl_product_link[title]')
+        for i in title_teg_search:
+            title_of_product = i.get_text().strip()
+            print('title_of_product = ', title_of_product)
+            self.list_titles_of_products.append(title_of_product)
 
     def get_discont(self,card):
         try:
@@ -220,37 +272,6 @@ class Reference_Sber(Browser):
                 discont = '0'
         return discont
 
-    def get_mass_product_in_kg(self, card):
-        return new_get_mass_from_title.search_of_mass_product(Reference_Sber.get_title(self, card))
-
-    def get_price_of_product_per_kg(self,card):
-        self.massa_of_product_in_kg = Reference_Sber.get_mass_product_in_kg(self, card)
-        if self.massa_of_product_in_kg is None:
-            return None
-        else:
-            try:
-                self.price_of_product_per_kg = round(self.get_price(card) / self.massa_of_product_in_kg)
-                return round(self.get_price(card) / self.massa_of_product_in_kg)
-            except ZeroDivisionError:
-                return None
-
-    def get_price_list_of_products(self):
-        card = Reference_Sber.get_cards_of_product(self)
-        data_of_product = []
-        price_list_of_products = []
-        for i in card:
-            price = self.get_price(i)
-            if Reference_Sber.get_price_of_product_per_kg(self, i) is None:
-                continue
-            else:
-                data_of_product.append(self.price_of_product_per_kg)
-                data_of_product.append(Reference_Sber.get_title(self,i))
-                data_of_product.append(price)
-                data_of_product.append(self.get_reference_on_product(i))
-                price_list_of_products.append(data_of_product)
-                data_of_product = []
-        return price_list_of_products
-
 def main_function_get_product_data(reference):
     if reference[:16] == 'https://www.ozon':
         received_link = Reference_Ozon(reference)
@@ -258,24 +279,39 @@ def main_function_get_product_data(reference):
         received_link=Reference_Sber(reference)
     else:
         return None
-    number_of_pages_viewed = 5
-    new_big_dict = {}
-    for i in range(number_of_pages_viewed):
-        new_big_dict = received_link.add_new_data_to_dict(new_big_dict)
-        received_link.get_next_page()
-    result_for_bot = received_link.get_result_for_bot(new_big_dict)
+    number_of_pages_viewed = 4
+    dict_with_collected_data = {}
+    for i in range(2, number_of_pages_viewed + 1):
+        dict_with_collected_data = received_link.add_data_to_dict(dict_with_collected_data)
+        received_link.stop_selenium()
+        received_link.get_next_page(i)
+        time.sleep(2)
+    result_for_bot = received_link.get_result_for_bot(dict_with_collected_data)
     received_link.stop_selenium()
     return result_for_bot
 
 def test(reference):
-    received_link = Reference_Sber(reference)
-    card = received_link.get_cards_of_product()
-    for i in card:
-        price = received_link.get_price(i)
-        massa = received_link.get_mass_product_in_kg(i)
-        received_link.get_price_of_product_per_kg(i)
-        print('massa = ', massa, 'price =', price, 'цена за кг -',   received_link.price_of_product_per_kg, '\n', received_link.get_reference_on_product(i))
-
+    if reference[:16] == 'https://www.ozon':
+        received_link = Reference_Ozon(reference)
+    elif reference[:12] == 'https://sber':
+        received_link = Reference_Sber(reference)
+    else:
+        return None
+    #card = received_link.get_cards_of_product()
+    # for i in card:
+    #     price = received_link.get_price(i)
+    #     massa = received_link.get_mass_product_in_kg(i)
+    #     received_link.get_price_of_product_per_kg(i)
+    #     print('massa = ', massa, 'price =', price, 'цена за кг -',   received_link.price_of_product_per_kg, '\n', received_link.get_reference_on_product(i))
+    received_link.get_cards_of_products()
+    # received_link.get_title_of_product()
+    # received_link.get_price_of_product()
+    # #received_link.get_price_list_of_products()
+    # received_link.get_mass_product_in_kg()
+    # received_link.get_price_of_product_per_kg()
+    received_link.get_price_list_of_products()
+#
 if __name__ == "__main__":
-    main_function_get_product_data(reference = 'https://sbermegamarket.ru/catalog/korma-dlya-koshek/#?related_search=Корма%20для%20кошек')
-#test('https://sbermegamarket.ru/catalog/korma-dlya-koshek/#?related_search=Корма%20для%20кошек')
+    #main_function_get_product_data(reference = 'https://sbermegamarket.ru/catalog/korma-dlya-koshek/#?related_search=%D0%BA%D0%BE%D1%80%D0%BC%D0%B0+%D0%B4%D0%BB%D1%8F+%D0%BA%D0%BE%D1%88%D0%B5%D0%BA')
+    main_function_get_product_data(reference='https://www.ozon.ru/category/suhie-korma-dlya-koshek-12349/?category_was_predicted=true&deny_category_prediction=true&from_global=true&text=корм+для+кошек+сухой')
+    #test('https://sbermegamarket.ru/catalog/korma-dlya-koshek/#?related_search=%D0%BA%D0%BE%D1%80%D0%BC%D0%B0+%D0%B4%D0%BB%D1%8F+%D0%BA%D0%BE%D1%88%D0%B5%D0%BA')
