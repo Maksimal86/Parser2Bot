@@ -1,58 +1,66 @@
 from abc import ABC, abstractmethod
-from selenium.webdriver import Keys, ActionChains
+from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
-from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import NoSuchElementException
 import undetected_chromedriver
-import time, datetime, sys, new_get_mass_from_title, lxml, re
+import time, sys, new_get_mass_from_title, re
 from bs4 import BeautifulSoup
+
+
 class Browser(ABC):
-    number_of_displayed_price_options = 5
+    def __init__(self, reference):
+        self.number_of_card_per_page = 36
+        self.number_of_displayed_price_options = 5
+        self.options = Browser.set_options_selenium(self)
+        self.s = Service(executable_path=r'C:\chromedriver.exe')
+        self.driver = undetected_chromedriver.Chrome(options=self.options, service=self.s)
+        self.reference = reference
+        self.list_prices_on_products = []
+        self.list_titles_of_products = []
+        self.list_references_of_products = []
+        self.list_prices_of_products_per_kg = []
+
+
     def set_options_selenium(self):
-        #options = webdriver.ChromeOptions()
         options = undetected_chromedriver.ChromeOptions()
-        #options.add_experimental_option("excludeSwitches", ['enable-automation'])
         options.add_argument("--disable-blink-features")  # отключение функций блинк-рантайм
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument("--headless")  # скрытый запуск браузера
         options.add_argument('--no-sandobox')  # режим песочницы
         options.add_argument('--disable-gpu')  # во избежание ошибок
-        options.add_argument('--disable-dev-shm-usage')  # для увеличеня памяти для хрома
-        # options.add_argument('--disable-brouser-side-navigation')  # прекращение загрузки дополниетльных подресурсов при дляительной загрузки страницы
+        options.add_argument('--disable-dev-shm-usage')  # для увеличения памяти для хрома
         options.add_argument('--lang=en')
-        #options.add_experimental_option('useAutomationExtension',
-        #                                False)  # опция отключает драйвер для установки других расширений Chrome, таких как CaptureScreenshot
         options.add_argument(
-            'user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 YaBrowser/22.11.5.715 Yowser/2.5 Safari/537.36')  # меняем заголовок запроса
+            'user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+            'Chrome/106.0.0.0 YaBrowser/22.11.5.715 Yowser/2.5 Safari/537.36')
         prefs = {"profile.managed_default_content_settings.images": 2}  # не загружаем картинки
-        # options.add_experimental_option('prefs', prefs)  # не загружаем картинки
+        options.add_experimental_option('prefs', prefs)  # не загружаем картинки
         return options
-    def start_selenium_browser(self, reference):
-        self.options = Browser.set_options_selenium(self)
-        self.reference = reference
-        self.s = Service(executable_path=r'C:\yandexdriver.exe')
-        self.s = Service(executable_path=r'C:\chromedriver.exe')
-        #self.driver = webdriver.Chrome(options=self.options, service=self.s)
-        self.driver = undetected_chromedriver.Chrome(options=self.options, service=self.s)
-        self.driver.get(reference)
-        page = self.driver.page_source
-        with open('index.html', 'w+', encoding='utf-8', errors='ignore') as file:  # запись страницы в файл
-            file.write(page)
-        return self.driver
 
-    def stop_selenium(self):
+    def start_selenium_browser(self):
+        self.options = Browser.set_options_selenium(self)
+        self.driver = undetected_chromedriver.Chrome(options=self.options, service=self.s)
+        self.driver.get(self.reference)
+
+
+
+    def selenium_driver_close(self):
         self.driver.close()
+
+    def selenium_driver_quit(self):
         self.driver.quit()
 
     def get_soup_pagehtml(self):
-        time.sleep(3)
+        self.driver.get(self.reference)   ######### проверить
         pagehtml = self.driver.page_source
         soup = BeautifulSoup(pagehtml, 'lxml')
         return soup
+
     @abstractmethod
     def get_cards_of_products(self):
         pass
+
     @abstractmethod
     def get_next_page(self, i):
         pass
@@ -65,6 +73,7 @@ class Browser(ABC):
     def get_title_of_product(self):
         pass
 
+
     @abstractmethod
     def get_reference_on_product(self):
         pass
@@ -76,7 +85,6 @@ class Browser(ABC):
             print('massa =', self.list_of_masses_products_in_kg )
 
     def get_price_of_product_per_kg(self):
-        self.list_prices_of_products_per_kg = []
         for i in range(self.number_of_card_per_page):
             try:
                 print('self.list_of_masses_products_in_kg[i] = ', self.list_of_masses_products_in_kg[i])
@@ -89,7 +97,6 @@ class Browser(ABC):
                 print('price_of_product_per_kg=', price_of_product_per_kg)
             except IndexError:
                 break
-
 
     def get_price_list_of_products(self):
         data_of_product = []
@@ -107,7 +114,7 @@ class Browser(ABC):
                     continue
                 else:
                     data_of_product.append(self.list_prices_of_products_per_kg[i])
-                    data_of_product.append( self.list_titles_of_products[i])
+                    data_of_product.append(self.list_titles_of_products[i])
                     data_of_product.append(self.list_prices_on_products[i])
                     data_of_product.append(self.list_references_of_products[i])
                     price_list_of_products.append(data_of_product)
@@ -129,6 +136,7 @@ class Browser(ABC):
                 print('str89 else')
                 dict_price_list_of_product[float(i[1])] = 'руб\n' + str(i[2]) + '\n' + str(i[3])
         return dict_price_list_of_product
+
     def add_data_to_dict(self, dict_with_collected_data):
         print('run add_data_to_dict')
         dict_with_collected_data.update(self.get_dict_results_for_products())
@@ -144,27 +152,23 @@ class Browser(ABC):
             n += 1
             print('№', n, str(key) + '-' + dict_with_collected_data[key].translate({ord(i): " " for i in "'' ()"}))
             result_for_bot.append(('№', n, str(key) + '-' + dict_with_collected_data[key].translate({ord(i): " " for i in "''() "})))
-            if n == Browser.number_of_displayed_price_options:
+            if n == self.number_of_displayed_price_options:
                 break
         return result_for_bot
 
 class Reference_Ozon(Browser):
 
-    def __init__(self, reference):
-        self.reference = reference
-        self.driver = Browser.start_selenium_browser(self, reference)
-        self.number_of_card_per_page = 36
-
     def get_next_page(self,i):
         time.sleep(3)
         if i == 2:
             match = re.search('from_global=true&', self.reference)
-            next_page_reference = self.reference[:match.end()] + f'page={i}&' + self.reference[match.end():]
+            self.reference = self.reference[:match.end()] + f'page={i}&' + self.reference[match.end():]
         else:
             match = re.search('page=\d', self.reference)
-            next_page_reference = self.reference[:match.start()] + f'page={i}' + self.reference[match.end():]
-        Reference_Ozon.start_selenium_browser(self,next_page_reference)
-        print('next_page_reference :', next_page_reference)
+            self.reference = self.reference[:match.start()] + f'page={i}' + self.reference[match.end():]
+        print('next_page_reference :', self.reference)
+        self.driver.get(self.reference)
+
 
 
     def get_cards_of_products(self):
@@ -200,35 +204,30 @@ class Reference_Ozon(Browser):
                 self.list_references_of_products.append(self.temporary_list_references_of_products[i]) #48
 
 
-
 class Reference_Sber(Browser):
-    def __init__(self, reference):
-        self.reference = reference
-        self.driver = Browser.start_selenium_browser(self, reference)
-        self.number_of_card_per_page = 36
 
-    def get_soup_pagehtml(self):
-        try:
-            ActionChains(self.driver).click(self.driver.find_element(By.XPATH,
-                                '/html/body/div[1]/div[1]/div[1]/div[2]/div/div/div/div/div[3]/button[1]')).perform()
-            print('кнопка есть')
-        except:
-            print('нет кнопки')
-        pagehtml = self.driver.page_source
-        soup = BeautifulSoup(pagehtml, 'lxml')
-        return soup
+    # def get_soup_pagehtml(self):
+    #     # try:
+    #     #     ActionChains(self.driver).click(self.driver.find_element(By.XPATH,
+    #     #                         '/html/body/div[1]/div[1]/div[1]/div[2]/div/div/div/div/div[3]/button[1]')).perform()
+    #     #     print('кнопка есть')
+    #     # except:
+    #     #     print('нет кнопки')
+    #     pagehtml = self.driver.page_source
+    #     soup = BeautifulSoup(pagehtml, 'lxml')
+    #     return soup
 
 
     def get_next_page(self, i):
         time.sleep(5)
         match = re.search('#\?', self.reference)
         if i == 2:
-            next_page_reference = self.reference[:match.start()] + f'page-{i}/' + self.reference[match.start():]
+            self.reference = self.reference[:match.start()] + f'page-{i}/' + self.reference[match.start():]
         else:
             match = re.search('page-\d', self.reference)
-            next_page_reference = self.reference[:match.start()] + f'page-{i}' + self.reference[match.end():]
-        Reference_Sber.start_selenium_browser(self,next_page_reference)
-        print(next_page_reference)
+            self.reference = self.reference[:match.start()] + f'page-{i}' + self.reference[match.end():]
+        self.driver.get(self.reference)
+        print(self.reference)
 
     def get_cards_of_products(self):
         soup = Reference_Ozon.get_soup_pagehtml(self)
@@ -283,11 +282,12 @@ def main_function_get_product_data(reference):
     dict_with_collected_data = {}
     for i in range(2, number_of_pages_viewed + 1):
         dict_with_collected_data = received_link.add_data_to_dict(dict_with_collected_data)
-        received_link.stop_selenium()
+        received_link.selenium_driver_close()
+        received_link.start_selenium_browser()
         received_link.get_next_page(i)
         time.sleep(2)
     result_for_bot = received_link.get_result_for_bot(dict_with_collected_data)
-    received_link.stop_selenium()
+    received_link.selenium_driver_quit()
     return result_for_bot
 
 def test(reference):
@@ -312,6 +312,6 @@ def test(reference):
     received_link.get_price_list_of_products()
 #
 if __name__ == "__main__":
-    #main_function_get_product_data(reference = 'https://sbermegamarket.ru/catalog/korma-dlya-koshek/#?related_search=%D0%BA%D0%BE%D1%80%D0%BC%D0%B0+%D0%B4%D0%BB%D1%8F+%D0%BA%D0%BE%D1%88%D0%B5%D0%BA')
-    main_function_get_product_data(reference='https://www.ozon.ru/category/suhie-korma-dlya-koshek-12349/?category_was_predicted=true&deny_category_prediction=true&from_global=true&text=корм+для+кошек+сухой')
+    main_function_get_product_data(reference = 'https://sbermegamarket.ru/catalog/korma-dlya-koshek/#?related_search=%D0%BA%D0%BE%D1%80%D0%BC%D0%B0+%D0%B4%D0%BB%D1%8F+%D0%BA%D0%BE%D1%88%D0%B5%D0%BA')
+    #main_function_get_product_data(reference='https://www.ozon.ru/category/suhie-korma-dlya-koshek-12349/?category_was_predicted=true&deny_category_prediction=true&from_global=true&text=корм+для+кошек+сухой')
     #test('https://sbermegamarket.ru/catalog/korma-dlya-koshek/#?related_search=%D0%BA%D0%BE%D1%80%D0%BC%D0%B0+%D0%B4%D0%BB%D1%8F+%D0%BA%D0%BE%D1%88%D0%B5%D0%BA')
