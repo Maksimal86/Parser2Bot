@@ -2,22 +2,22 @@
 import re
 import sys
 
-title_of_product = 'м курицы, МКБ при мочекаменной болезни, 1шт 1.5кг '
+title_of_product = 'Сухой корм Best Dinner Holistic Veal & Oregano для любых кошек гипоаллергенный с телятиной и орегано 10 кг'
 
 
 def search_of_mass_product(title_of_product):
     try:
         if search_for_mass_composite_product_kg(title_of_product):
-            print('if', title_of_product)
+            print('if', title_of_product, 'massa from new = ',search_for_mass_composite_product_kg(title_of_product))
             return search_for_mass_composite_product_kg(title_of_product)
         elif search_for_mass_composite_product_gramm(title_of_product):
-            print('elif1', title_of_product)
+            print('elif1', title_of_product,'massa from new = ')
             return search_for_mass_composite_product_gramm(title_of_product)
         elif search_for_mass_in_kg(title_of_product):
             print('elif2', title_of_product + '/n', 'massa from new = ', search_for_mass_in_kg(title_of_product))
             return search_for_mass_in_kg(title_of_product)
         elif search_for_mass_in_gramm(title_of_product):
-            print('elif3', title_of_product)
+            print('elif3', title_of_product,'massa from new = ',search_for_mass_in_gramm(title_of_product))
             return search_for_mass_in_gramm(title_of_product)
         else:
             print('Штучный товар ', title_of_product, type(title_of_product))#
